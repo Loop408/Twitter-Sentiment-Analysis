@@ -20,30 +20,36 @@ logger.info(f"🚀 Static URL path: {app.static_url_path}")
 # Static stopwords
 STOP_WORDS = {'i','me','my','myself','we','our','ours','ourselves','you','your','yours','yourself','yourselves','he','him','his','himself','she','her','hers','herself','it','its','itself','they','them','their','theirs','themselves','what','which','who','whom','this','that','these','those','am','is','are','was','were','be','been','being','have','has','had','having','do','does','did','doing','a','an','the','and','but','if','or','because','as','until','while','of','at','by','for','with','through','during','before','after','above','below','up','down','in','out','on','off','over','under','again','further','then','once','here','there','when','where','why','how','all','any','both','each','few','more','most','other','some','such','no','nor','not','only','own','same','so','than','too','very','can','will','just','should','now'}
 
-# Load models
-logger.info("🚀 Loading ML models...")
-current_dir = os.path.dirname(os.path.abspath(__file__))
-logger.info(f"🚀 Current directory: {current_dir}")
+# Load models lazily to prevent import errors
+model = None
+vectorizer = None
 
-model_path = os.path.join(current_dir, "sentiment_model.pkl")
-vectorizer_path = os.path.join(current_dir, "vectorizer.pkl")
-
-logger.info(f"🚀 Model path: {model_path}")
-logger.info(f"🚀 Vectorizer path: {vectorizer_path}")
-
-if os.path.exists(model_path):
-    model = pickle.load(open(model_path, "rb"))
-    logger.info("🚀 Model loaded successfully!")
-else:
-    logger.error(f"🚨 Model file not found: {model_path}")
-    model = None
-
-if os.path.exists(vectorizer_path):
-    vectorizer = pickle.load(open(vectorizer_path, "rb"))
-    logger.info("🚀 Vectorizer loaded successfully!")
-else:
-    logger.error(f"🚨 Vectorizer file not found: {vectorizer_path}")
-    vectorizer = None
+def load_models():
+    global model, vectorizer
+    if model is not None and vectorizer is not None:
+        return
+    
+    logger.info("🚀 Loading ML models...")
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    logger.info(f"🚀 Current directory: {current_dir}")
+    
+    model_path = os.path.join(current_dir, "sentiment_model.pkl")
+    vectorizer_path = os.path.join(current_dir, "vectorizer.pkl")
+    
+    logger.info(f"🚀 Model path: {model_path}")
+    logger.info(f"🚀 Vectorizer path: {vectorizer_path}")
+    
+    if os.path.exists(model_path):
+        model = pickle.load(open(model_path, "rb"))
+        logger.info("🚀 Model loaded successfully!")
+    else:
+        logger.error(f"🚨 Model file not found: {model_path}")
+        
+    if os.path.exists(vectorizer_path):
+        vectorizer = pickle.load(open(vectorizer_path, "rb"))
+        logger.info("🚀 Vectorizer loaded successfully!")
+    else:
+        logger.error(f"🚨 Vectorizer file not found: {vectorizer_path}")
 
 # Large dataset reading removed from global initialization to prevent slow server wake-ups.
 # Data is now streamed directly during hashtag analysis.
@@ -90,6 +96,9 @@ def predict_sentiment():
     logger.info(f"🔍 DEBUG: Request data: {request.data}")
     
     try:
+        # Load models on first request
+        load_models()
+        
         if not model or not vectorizer:
             logger.error("🚨 DEBUG: Model or vectorizer not loaded")
             return jsonify({"error": "Model not loaded"}), 500
@@ -137,6 +146,9 @@ def analyze_hashtag():
     logger.info(f"🔍 DEBUG: Request data: {request.data}")
     
     try:
+        # Load models on first request
+        load_models()
+        
         if not model or not vectorizer:
             logger.error("🚨 DEBUG: Model or vectorizer not loaded")
             return jsonify({"error": "Model not loaded"}), 500
