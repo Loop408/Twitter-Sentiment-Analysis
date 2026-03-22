@@ -6,8 +6,8 @@ import json
 import csv
 import logging
 
-# Configure logging
-logging.basicConfig(level=logging.DEBUG)
+# Configure logging (less verbose for production)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__, static_folder="../frontend/build", static_url_path="/")
@@ -69,8 +69,8 @@ def serve(path):
 
 @app.route('/health')
 def health():
-    logger.info("🔍 DEBUG: Health check endpoint called")
-    return jsonify({"status": "healthy"})
+    logger.info("🔍 Health check endpoint called")
+    return jsonify({"status": "healthy", "models_loaded": bool(model and vectorizer)})
 
 @app.route('/predict', methods=['POST'])
 def predict_sentiment():
