@@ -149,6 +149,9 @@ def analyze_hashtag():
         hashtag = data.get("hashtag", "")
         logger.info(f"🔍 DEBUG: Hashtag to analyze: {hashtag}")
         
+        # Define current_dir for file paths
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        
         sample_tweets = []
         if hashtag:
             lower_hashtag = hashtag.lower().strip()
