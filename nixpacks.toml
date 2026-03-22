@@ -2,7 +2,7 @@
 nixPkgs = ["python39", "gcc"]
 
 [phases.install]
-cmds = ["pip install -r backend/requirements.txt"]
+cmds = ["python3.9 -m pip install -r backend/requirements.txt"]
 
 [start]
 cmd = "cd backend && gunicorn app:app"
