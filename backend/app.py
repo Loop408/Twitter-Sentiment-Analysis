@@ -10,7 +10,10 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = Flask(__name__, static_folder="../frontend/build", static_url_path="/")
+from flask_cors import CORS
+
+app = Flask(__name__)
+CORS(app) # Allow all origins for now, can be restricted later
 
 logger.info("🚀 Flask app starting up...")
 logger.info(f"🚀 Current directory: {os.getcwd()}")
@@ -74,19 +77,6 @@ def api_root():
 def health():
     logger.info("🔍 Health check endpoint called")
     return jsonify({"status": "healthy", "models_loaded": bool(model and vectorizer)})
-
-@app.route("/", defaults={"path": ""})
-@app.route("/<path:path>")
-def serve(path):
-    try:
-        logger.info(f"🔍 Static file request: {path}")
-        import os
-        if path != "" and os.path.exists(os.path.join(app.static_folder, path)):
-            return send_from_directory(app.static_folder, path)
-        return send_from_directory(app.static_folder, "index.html")
-    except Exception as e:
-        logger.error(f"🚨 Error serving static file {path}: {str(e)}")
-        return jsonify({"error": "Static file not found"}), 404
 
 @app.route('/predict', methods=['POST'])
 def predict_sentiment():

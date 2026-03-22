@@ -1,17 +1,11 @@
 [phases.setup]
-nixPkgs = ["nodejs", "python311", "gcc", "stdenv.cc.cc.lib", "zlib"]
+nixPkgs = ["python311", "gcc", "stdenv.cc.cc.lib", "zlib"]
 
 [phases.install]
 cmds = [
   "python3 -m venv /opt/venv",
   "/opt/venv/bin/pip install -U pip",
-  "/opt/venv/bin/pip install -r requirements.txt || /opt/venv/bin/pip install -r backend/requirements.txt",
-  "cd frontend && npm install"
-]
-
-[phases.build]
-cmds = [
-  "cd frontend && CI=false npm run build"
+  "/opt/venv/bin/pip install -r backend/requirements.txt"
 ]
 
 [start]
