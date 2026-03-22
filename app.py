@@ -158,14 +158,17 @@ def analyze_hashtag():
             # If they entered a hash symbol, skip it for the word search
             if lower_hashtag.startswith('#'):
                 lower_hashtag = lower_hashtag[1:]
-                
-            search_str = f" {lower_hashtag} "
             
             # Read files dynamically here to avoid loading huge datasets into memory on backend startup
-            for filename in ["train_data.csv", "test_data.csv"]:
-                filepath = os.path.join(current_dir, filename)
+            for filename in ["backend/train_data.csv", "backend/test_data.csv"]:
+                filepath = os.path.join(os.path.dirname(current_dir), filename)
                 if not os.path.exists(filepath):
-                    continue
+                    # Try relative path from current directory
+                    filepath = filename
+                    if not os.path.exists(filepath):
+                        logger.warning(f"File not found: {filepath}")
+                        continue
+                        
                 try:
                     with open(filepath, "r", encoding="utf-8") as f:
                         reader = csv.reader(f)
@@ -176,15 +179,17 @@ def analyze_hashtag():
                         for row in reader:
                             if row:
                                 t = row[0]
-                                padded_t = f" {t.lower()} "
-                                if search_str in padded_t:
+                                # Check if the hashtag word exists as a whole word in the tweet
+                                # Using word boundaries to match whole words only
+                                words = t.lower().split()
+                                if lower_hashtag in words:
                                     sample_tweets.append(t)
                                     # Limit the number of tweets analyzed per search request
                                     # to prevent long TTFB and memory overflow bugs
                                     if len(sample_tweets) >= 1000:
                                         break
                 except Exception as e:
-                    print(f"Warning: Could not search {filename}: {e}")
+                    logger.warning(f"Warning: Could not search {filename}: {e}")
                 
                 if len(sample_tweets) >= 1000:
                     break
