@@ -65,9 +65,9 @@ def clean_text(text):
     words = [w for w in words if w not in STOP_WORDS and len(w) > 2]
     return " ".join(words)
 
-@app.route('/')
-def root():
-    logger.info("🔍 Root endpoint called")
+@app.route('/api')
+def api_root():
+    logger.info("🔍 API root endpoint called")
     return jsonify({"message": "Twitter Sentiment Analysis API", "status": "running"})
 
 @app.route('/health')

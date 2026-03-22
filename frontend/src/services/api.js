@@ -104,7 +104,6 @@ export const analyzeHashtag = async (hashtag) => {
   }
 };
 
-// Add a health check function for debugging
 export const healthCheck = async () => {
   console.log('🔍 DEBUG: Health check called');
   console.log('🔍 DEBUG: API_BASE_URL:', API_BASE_URL);
@@ -130,6 +129,34 @@ export const healthCheck = async () => {
     
   } catch (error) {
     console.log('🔍 DEBUG: Health check error:', error);
+    throw error;
+  }
+};
+
+// Add API root check
+export const apiRoot = async () => {
+  console.log('🔍 DEBUG: API root called');
+  console.log('🔍 DEBUG: Full URL:', `${API_BASE_URL}/api`);
+  
+  try {
+    const response = await fetch(`${API_BASE_URL}/api`, {
+      method: 'GET',
+    });
+    
+    console.log('🔍 DEBUG: API root response status:', response.status);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.log('🔍 DEBUG: API root error:', errorText);
+      throw new Error(`API root failed: ${response.status} ${errorText}`);
+    }
+    
+    const data = await response.json();
+    console.log('🔍 DEBUG: API root response:', data);
+    return data;
+    
+  } catch (error) {
+    console.log('🔍 DEBUG: API root error:', error);
     throw error;
   }
 };

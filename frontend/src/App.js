@@ -4,7 +4,7 @@ import Sidebar from './components/Sidebar';
 import HashtagAnalyzer from './components/HashtagAnalyzer';
 import SingleTweetAnalyzer from './components/SingleTweetAnalyzer';
 import ParticleBackground from './components/ParticleBackground';
-import { healthCheck } from './services/api';
+import { healthCheck, apiRoot } from './services/api';
 import './App.css';
 
 function App() {
@@ -17,11 +17,17 @@ function App() {
     };
     window.addEventListener('mousemove', handleMouseMove);
     
-    // Test backend health on app load
+    // Test backend health and API root on app load
     healthCheck().then(response => {
       console.log('✅ Backend health check passed:', response);
     }).catch(error => {
       console.error('❌ Backend health check failed:', error);
+    });
+    
+    apiRoot().then(response => {
+      console.log('✅ Backend API root check passed:', response);
+    }).catch(error => {
+      console.error('❌ Backend API root check failed:', error);
     });
     
     return () => window.removeEventListener('mousemove', handleMouseMove);
