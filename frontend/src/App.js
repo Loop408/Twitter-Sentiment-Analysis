@@ -4,6 +4,7 @@ import Sidebar from './components/Sidebar';
 import HashtagAnalyzer from './components/HashtagAnalyzer';
 import SingleTweetAnalyzer from './components/SingleTweetAnalyzer';
 import ParticleBackground from './components/ParticleBackground';
+import { healthCheck } from './services/api';
 import './App.css';
 
 function App() {
@@ -15,6 +16,14 @@ function App() {
       setMousePosition({ x: e.clientX, y: e.clientY });
     };
     window.addEventListener('mousemove', handleMouseMove);
+    
+    // Test backend health on app load
+    healthCheck().then(response => {
+      console.log('✅ Backend health check passed:', response);
+    }).catch(error => {
+      console.error('❌ Backend health check failed:', error);
+    });
+    
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 

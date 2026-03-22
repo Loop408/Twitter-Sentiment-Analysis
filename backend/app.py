@@ -4,16 +4,46 @@ import re
 import os
 import json
 import csv
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__, static_folder="../frontend/build", static_url_path="/")
+
+logger.info("🚀 Flask app starting up...")
+logger.info(f"🚀 Current directory: {os.getcwd()}")
+logger.info(f"🚀 Static folder: {app.static_folder}")
+logger.info(f"🚀 Static URL path: {app.static_url_path}")
 
 # Static stopwords
 STOP_WORDS = {'i','me','my','myself','we','our','ours','ourselves','you','your','yours','yourself','yourselves','he','him','his','himself','she','her','hers','herself','it','its','itself','they','them','their','theirs','themselves','what','which','who','whom','this','that','these','those','am','is','are','was','were','be','been','being','have','has','had','having','do','does','did','doing','a','an','the','and','but','if','or','because','as','until','while','of','at','by','for','with','through','during','before','after','above','below','up','down','in','out','on','off','over','under','again','further','then','once','here','there','when','where','why','how','all','any','both','each','few','more','most','other','some','such','no','nor','not','only','own','same','so','than','too','very','can','will','just','should','now'}
 
 # Load models
+logger.info("🚀 Loading ML models...")
 current_dir = os.path.dirname(os.path.abspath(__file__))
-model = pickle.load(open(os.path.join(current_dir, "sentiment_model.pkl"), "rb"))
-vectorizer = pickle.load(open(os.path.join(current_dir, "vectorizer.pkl"), "rb"))
+logger.info(f"🚀 Current directory: {current_dir}")
+
+model_path = os.path.join(current_dir, "sentiment_model.pkl")
+vectorizer_path = os.path.join(current_dir, "vectorizer.pkl")
+
+logger.info(f"🚀 Model path: {model_path}")
+logger.info(f"🚀 Vectorizer path: {vectorizer_path}")
+
+if os.path.exists(model_path):
+    model = pickle.load(open(model_path, "rb"))
+    logger.info("🚀 Model loaded successfully!")
+else:
+    logger.error(f"🚨 Model file not found: {model_path}")
+    model = None
+
+if os.path.exists(vectorizer_path):
+    vectorizer = pickle.load(open(vectorizer_path, "rb"))
+    logger.info("🚀 Vectorizer loaded successfully!")
+else:
+    logger.error(f"🚨 Vectorizer file not found: {vectorizer_path}")
+    vectorizer = None
 
 # Large dataset reading removed from global initialization to prevent slow server wake-ups.
 # Data is now streamed directly during hashtag analysis.
@@ -39,35 +69,73 @@ def serve(path):
 
 @app.route('/health')
 def health():
+    logger.info("🔍 DEBUG: Health check endpoint called")
     return jsonify({"status": "healthy"})
 
 @app.route('/predict', methods=['POST'])
 def predict_sentiment():
+    logger.info("🔍 DEBUG: Predict endpoint called")
+    logger.info(f"🔍 DEBUG: Request method: {request.method}")
+    logger.info(f"🔍 DEBUG: Request headers: {dict(request.headers)}")
+    logger.info(f"🔍 DEBUG: Request data: {request.data}")
+    
     try:
+        if not model or not vectorizer:
+            logger.error("🚨 DEBUG: Model or vectorizer not loaded")
+            return jsonify({"error": "Model not loaded"}), 500
+        
         data = json.loads(request.data)
+        logger.info(f"🔍 DEBUG: Parsed data: {data}")
+        
         tweet = data.get("tweet", "")
+        logger.info(f"🔍 DEBUG: Tweet to analyze: {tweet}")
         
         cleaned = clean_text(tweet)
+        logger.info(f"🔍 DEBUG: Cleaned text: {cleaned}")
+        
         vector = vectorizer.transform([cleaned])
+        logger.info(f"🔍 DEBUG: Vector shape: {vector.shape}")
+        
         prediction = model.predict(vector)[0]
         probabilities = model.predict_proba(vector)[0]
+        logger.info(f"🔍 DEBUG: Prediction: {prediction}")
+        logger.info(f"🔍 DEBUG: Probabilities: {probabilities}")
         
-        return jsonify({
+        result = {
             "sentiment": "Positive" if prediction == 1 else "Negative",
             "confidence": round(float(max(probabilities)) * 100, 2),
             "probabilities": {
                 "negative": round(float(probabilities[0]) * 100, 2),
                 "positive": round(float(probabilities[1]) * 100, 2)
             }
-        })
+        }
+        logger.info(f"🔍 DEBUG: Result: {result}")
+        return jsonify(result)
+        
     except Exception as e:
+        logger.error(f"🚨 DEBUG: Error in predict: {str(e)}")
+        logger.error(f"🚨 DEBUG: Error type: {type(e)}")
+        import traceback
+        logger.error(f"🚨 DEBUG: Traceback: {traceback.format_exc()}")
         return jsonify({"error": str(e)}), 500
 
 @app.route('/analyze-hashtag', methods=['POST'])
 def analyze_hashtag():
+    logger.info("🔍 DEBUG: Analyze hashtag endpoint called")
+    logger.info(f"🔍 DEBUG: Request method: {request.method}")
+    logger.info(f"🔍 DEBUG: Request headers: {dict(request.headers)}")
+    logger.info(f"🔍 DEBUG: Request data: {request.data}")
+    
     try:
+        if not model or not vectorizer:
+            logger.error("🚨 DEBUG: Model or vectorizer not loaded")
+            return jsonify({"error": "Model not loaded"}), 500
+        
         data = json.loads(request.data)
+        logger.info(f"🔍 DEBUG: Parsed data: {data}")
+        
         hashtag = data.get("hashtag", "")
+        logger.info(f"🔍 DEBUG: Hashtag to analyze: {hashtag}")
         
         sample_tweets = []
         if hashtag:
@@ -141,4 +209,6 @@ def analyze_hashtag():
         return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+    port = int(os.environ.get("PORT", 5000))
+    logger.info(f"🚀 Starting Flask app on port {port}")
+    app.run(host="0.0.0.0", port=port)
