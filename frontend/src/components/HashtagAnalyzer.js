@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Download, Clock, X } from 'lucide-react';
+import { Download } from 'lucide-react';
 import PieChart from './PieChart';
 import WordCloud from './WordCloud';
 import { analyzeHashtag } from '../services/api';
