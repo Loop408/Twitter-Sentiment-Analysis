@@ -59,18 +59,28 @@ def clean_text(text):
     words = [w for w in words if w not in STOP_WORDS and len(w) > 2]
     return " ".join(words)
 
-@app.route("/", defaults={"path": ""})
-@app.route("/<path:path>")
-def serve(path):
-    import os
-    if path != "" and os.path.exists(os.path.join(app.static_folder, path)):
-        return send_from_directory(app.static_folder, path)
-    return send_from_directory(app.static_folder, "index.html")
+@app.route('/')
+def root():
+    logger.info("🔍 Root endpoint called")
+    return jsonify({"message": "Twitter Sentiment Analysis API", "status": "running"})
 
 @app.route('/health')
 def health():
     logger.info("🔍 Health check endpoint called")
     return jsonify({"status": "healthy", "models_loaded": bool(model and vectorizer)})
+
+@app.route("/", defaults={"path": ""})
+@app.route("/<path:path>")
+def serve(path):
+    try:
+        logger.info(f"🔍 Static file request: {path}")
+        import os
+        if path != "" and os.path.exists(os.path.join(app.static_folder, path)):
+            return send_from_directory(app.static_folder, path)
+        return send_from_directory(app.static_folder, "index.html")
+    except Exception as e:
+        logger.error(f"🚨 Error serving static file {path}: {str(e)}")
+        return jsonify({"error": "Static file not found"}), 404
 
 @app.route('/predict', methods=['POST'])
 def predict_sentiment():
