@@ -1,8 +1,0 @@
-services:
-  - type: web
-    name: sentiment-analysis-app
-    env: python
-    plan: free
-    buildCommand: "bash build.sh"
-    startCommand: "cd backend && python app.py"
-    healthCheckPath: /health
