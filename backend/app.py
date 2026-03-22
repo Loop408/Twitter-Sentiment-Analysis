@@ -15,29 +15,8 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 model = pickle.load(open(os.path.join(current_dir, "sentiment_model.pkl"), "rb"))
 vectorizer = pickle.load(open(os.path.join(current_dir, "vectorizer.pkl"), "rb"))
 
-# Load datasets into memory
-all_tweets = []
-try:
-    with open(os.path.join(current_dir, "train_data.csv"), "r", encoding="utf-8") as f:
-        reader = csv.reader(f)
-        next(reader) # skip header
-        for row in reader:
-            if row: all_tweets.append(row[0])
-    print(f"Loaded train_data.csv")
-except Exception as e:
-    print(f"Warning: Could not load train_data.csv: {e}")
-
-try:
-    with open(os.path.join(current_dir, "test_data.csv"), "r", encoding="utf-8") as f:
-        reader = csv.reader(f)
-        next(reader) # skip header
-        for row in reader:
-            if row: all_tweets.append(row[0])
-    print(f"Loaded test_data.csv")
-except Exception as e:
-    print(f"Warning: Could not load test_data.csv: {e}")
-    
-print(f"Successfully loaded a total of {len(all_tweets)} tweets from CSV datasets.")
+# Large dataset reading removed from global initialization to prevent slow server wake-ups.
+# Data is now streamed directly during hashtag analysis.
 
 
 def clean_text(text):
@@ -98,11 +77,34 @@ def analyze_hashtag():
                 lower_hashtag = lower_hashtag[1:]
                 
             search_str = f" {lower_hashtag} "
-            for t in all_tweets:
-                # Pad the tweet with spaces to ensure whole-word matching
-                padded_t = f" {t.lower()} "
-                if search_str in padded_t:
-                    sample_tweets.append(t)
+            
+            # Read files dynamically here to avoid loading huge datasets into memory on backend startup
+            for filename in ["train_data.csv", "test_data.csv"]:
+                filepath = os.path.join(current_dir, filename)
+                if not os.path.exists(filepath):
+                    continue
+                try:
+                    with open(filepath, "r", encoding="utf-8") as f:
+                        reader = csv.reader(f)
+                        try:
+                            next(reader) # skip header
+                        except StopIteration:
+                            pass
+                        for row in reader:
+                            if row:
+                                t = row[0]
+                                padded_t = f" {t.lower()} "
+                                if search_str in padded_t:
+                                    sample_tweets.append(t)
+                                    # Limit the number of tweets analyzed per search request
+                                    # to prevent long TTFB and memory overflow bugs
+                                    if len(sample_tweets) >= 1000:
+                                        break
+                except Exception as e:
+                    print(f"Warning: Could not search {filename}: {e}")
+                
+                if len(sample_tweets) >= 1000:
+                    break
                         
         if not sample_tweets:
             sample_tweets = [f"No real tweets found containing {hashtag}."]
